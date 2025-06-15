@@ -1,58 +1,73 @@
-use std::io::stdin;
-fn main() {
-    println!("Give first number");
+use std::{fmt::Display, io::stdin, str::FromStr};
 
-    let first_number = get_equation_number();
+enum Operator {
+    Add,
+    Sub,
+    Mul,
+    Div,
+}
 
-    println!("Give operator");
-    let operator = get_input();
+impl FromStr for Operator {
+    type Err = String;
 
-    let operator = match operator {
-        Ok(o) if o == "+" => "+",
-        _ => return println!("Could not find operatir"),
-    };
-
-    println!("Give second number");
-    let second_number = get_equation_number();
-
-    let (first_number, second_number) = match (first_number, second_number) {
-        (Ok(first), Ok(second)) => (first, second),
-        (Err(e1), Err(e2)) => {
-            println!("Error {}, {}", e1, e2);
-            return;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.trim() {
+            "+" => Ok(Operator::Add),
+            "-" => Ok(Operator::Sub),
+            "*" => Ok(Operator::Mul),
+            "/" => Ok(Operator::Div),
+            other => Err(format!("Unsupported operator '{other}'")),
         }
-        (Ok(_), Err(e)) => {
-            println!("Error {}", e);
-            return;
-        }
-        (Err(e), Ok(_)) => {
-            println!("Error {}", e);
-            return;
-        }
-    };
-
-    print!(
-        "Equasion is {} {} {}",
-        first_number, operator, second_number
-    );
-
-    let operator = operator.trim();
-
-    if operator == "+" {
-        let res = first_number + second_number;
-        println!("Result is {}", res);
     }
 }
 
-fn get_input() -> Result<String, String> {
+impl Display for Operator {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let sym = match self {
+            Operator::Add => "+",
+            Operator::Sub => "-",
+            Operator::Mul => "*",
+            Operator::Div => "/",
+        };
+        write!(f, "{sym}")
+    }
+}
+
+fn read_line(prompt: &str) -> Result<String, String> {
+    println!("{prompt}");
+
     let mut input = String::new();
     stdin().read_line(&mut input).map_err(|e| e.to_string())?;
     Ok(input.trim().to_string())
 }
 
-fn get_equation_number() -> Result<i32, String> {
-    let num = get_input()?;
+fn get_number(prompt: &str) -> Result<i32, String> {
+    let line = read_line(prompt).map_err(|e: String| e.to_string())?;
 
-    num.parse::<i32>()
-        .map_err(|e| format!("'{}' Could not parse that number", e))
+    line.parse::<i32>()
+        .map_err(|e| format!("Not a valid number {}", e))
+}
+
+fn read_operator(prompt: &str) -> Result<Operator, String> {
+    let line = read_line(prompt).map_err(|e: String| e.to_string())?;
+    line.parse()
+}
+
+fn calculate(ln: i32, op: Operator, rn: i32) -> Result<i32, String> {
+    match op {
+        Operator::Add => Ok(ln + rn),
+        Operator::Sub => Ok(ln - rn),
+        Operator::Mul => Ok(ln * rn),
+        Operator::Div => Ok(ln / rn),
+    }
+}
+
+fn main() -> Result<(), String> {
+    let ln = get_number("First number")?;
+    let op = read_operator("Operator")?;
+    let rn = get_number("Second number")?;
+
+    let result = calculate(ln, op, rn)?;
+    println!("Equasion result is {}", result);
+    Ok(())
 }
